@@ -29,11 +29,15 @@ class QuestionSerializer(serializers.ModelSerializer):
 
 class TestSerializer(serializers.ModelSerializer):
     questions = QuestionSerializer(many=True, read_only=True)
+    created_by_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Test
-        fields = '__all__'
+        fields = ['id', 'test_title', 'status', 'created_at', 'updated_at','questions', 'created_by', 'created_by_name']
         read_only_fields = ['created_by', 'created_at', 'updated_at']
+
+    def get_created_by_name(self, obj):
+        return obj.created_by.name if obj.created_by else None
 
 class AnswerSerializer(serializers.ModelSerializer):
     class Meta:

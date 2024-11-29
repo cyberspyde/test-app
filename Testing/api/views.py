@@ -58,44 +58,43 @@ class UserViewSet(viewsets.ModelViewSet):
 class TestViewSet(viewsets.ModelViewSet):
     queryset = Test.objects.all()
     serializer_class = TestSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
 
+    def get_permissions(self):
+        if self.action == 'list':
+            permission_classes = [permissions.IsAuthenticated]
+        else:
+            permission_classes = [permissions.IsAdminUser]
+        return [permission() for permission in permission_classes]
+    
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
-
-    @action(detail=True, methods=['POST'])
-    def publish_test(self, request, pk=None):
-        test = self.get_object()
-        test.status = 'published'
-        test.save()
-        return Response({'status': 'test published'}, status=status.HTTP_200_OK)
-        
 class QuestionViewSet(viewsets.ModelViewSet):
     queryset = Question.objects.all()
     serializer_class = QuestionSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
 
-    def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
-
-    def get_queryset(self):
-        user = self.request.user
-        return Question.objects.filter(created_by=user)
+    def get_permissions(self):
+        if self.action == 'list':
+            permission_classes = [permissions.IsAuthenticated]
+        else:
+            permission_classes = [permissions.IsAdminUser]
+        return [permission() for permission in permission_classes]
 
 class AnswerViewSet(viewsets.ModelViewSet):
     queryset = Answer.objects.all()
     serializer_class = AnswerSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
 
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+    def get_permisssions(self):
+        if self.action in ['list', 'create']:
+            permission_classes = [permissions.IsAuthenticated]
+        else:
+            permission_classes = [permissions.IsAdminUser]
+        return [permission() for permission in permission_classes]
 
     def get_queryset(self):
         user = self.request.user
-        return Answer.objects.filter(user=user)
-
-    @action(detail=False, methods=['GET'])
-    def get_user_answers(self, request):
-        answers = Answer.objects.filter(user=request.user)
-        serializer = self.get_serializer(answers, many=True)
-        return Response(serializer.data)
+        if user.role not in ['admin', 'super_admin']:
+            return Answer.objects.filter(user=user)
+        return Answer.objects.all()
