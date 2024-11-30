@@ -69,6 +69,7 @@ class TestViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
+
 class QuestionViewSet(viewsets.ModelViewSet):
     queryset = Question.objects.all()
     serializer_class = QuestionSerializer
@@ -80,6 +81,9 @@ class QuestionViewSet(viewsets.ModelViewSet):
         else:
             permission_classes = [permissions.IsAdminUser]
         return [permission() for permission in permission_classes]
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
 
 class AnswerViewSet(viewsets.ModelViewSet):
     queryset = Answer.objects.all()
@@ -93,8 +97,5 @@ class AnswerViewSet(viewsets.ModelViewSet):
             permission_classes = [permissions.IsAdminUser]
         return [permission() for permission in permission_classes]
 
-    def get_queryset(self):
-        user = self.request.user
-        if user.role not in ['admin', 'super_admin']:
-            return Answer.objects.filter(user=user)
-        return Answer.objects.all()
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)

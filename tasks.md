@@ -35,23 +35,38 @@ Test tasks
 
 Question tasks
 
-1. create a new Question using api ()
+1. create a new Question using api (permission set to Admin only)
+    send POST request to : http://localhost:8000/questions/
+    required params : Auth token, {"question_text": "", "test" : {test id} }
 
-2. read the Question using api ()
+2. read the Question using api (permission set to Admin only for all questions, allowAny for specific questions)
+    send GET request to : http://localhost:8000/questions/
+    required : Auth token
 
-3. update the Question using api ()
+3. update the Question using api (permission set to Admin only)
+    send PUT request to : http://localhost:8000/questions/<int:pk>
+    required : Auth token, {params to change, "test" : {test_id} }
 
-4. delete the Question using api ()
+4. delete the Question using api (permission set to Admin only)
+    send DELETE request to : http://localhost:8000/questions/<int:pk>
+    required : Auth token
 
 Answer tasks
 
-1. create the Answer using api ()
+1. create the Answer using api (any Authenticated users)
+    send POST request to : http://localhost:8000/answers/
+    required : Auth token, {"answer_text" : "", "test" : {test_id}, "question" : {question_id} }
 
-2. read the Question using api ()
+2. read the Answer using api (permission set to Admin only)
+    send GET request to : http://localhost:8000/answers/
+    required : Auth token, id if for specific answers
 
-3. update the Answer using api ()
+3. update the Answer using api (permission set to Authenticated user only)
+    send PUT request to : http://localhost:8000/answers/<int:pk>
+    required : Auth token, 
 
-4. delete the Answer using api ()
-
+4. delete the Answer using api (permission set to Admin only)
+    send DELETE request to : http://localhost:8000/answers/<int:pk>
+    required : Auth token, answer id
 
 

@@ -94,8 +94,8 @@ class Answer(models.Model):
     answer_audio = models.FileField(upload_to='answer_audio/', blank=True, null=True)
     test = models.ForeignKey(Test,on_delete=models.CASCADE, related_name='answers')
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='answers')
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
-        return f"{self.question} savolga {self.user} tomonidan javob"
+        return f"{self.question} savolga {self.created_by} tomonidan javob"
