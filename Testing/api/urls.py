@@ -1,6 +1,7 @@
-from django.urls import path, include
+from django.urls import path, include, re_path
 from rest_framework.routers import DefaultRouter
 from .views import TestViewSet, QuestionViewSet, AnswerViewSet, CustomAuthToken, UserViewSet
+from .swagger import schema_view
 
 router = DefaultRouter()
 
@@ -15,4 +16,5 @@ urlpatterns = [
     # path('api/users/<int:pk>/update/', UserUpdateView.as_view(), name='user-update'),
     # path('api/users/<int:pk>/delete/', UserDeleteView.as_view(), name='user-delete'),
     path('api-token-auth/', CustomAuthToken.as_view(), name='api_token_auth'),
+    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
 ]

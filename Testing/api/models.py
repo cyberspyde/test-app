@@ -1,7 +1,18 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.utils import timezone
-    
+
+class Category(models.Model):
+    name = models.CharField(max_length=20, unique=True)
+    description = models.TextField(blank=True, null=True)
+
+    class Meta:
+        verbose_name_plural = "Categories"
+
+    def __str__(self):
+        return f"{self.name}"
+
+
 class CustomUserManager(BaseUserManager):
     def create_user(self, phone_number, name, password=None, **extra_fields):
         if not phone_number:
@@ -39,6 +50,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     password = models.CharField(max_length=128, blank=True, null=True)
     name = models.CharField(max_length=128, blank=True, null=True)
+    email = models.EmailField(unique=True, null=True, blank=True)
+    avatar = models.FileField(upload_to='avatars/', blank=True, null=True)
+    interests = models.ManyToManyField(Category, related_name='interested_users', blank=True)
+    quiz_points = models.IntegerField(null=True, blank=True)
+    number_of_tests_done = models.IntegerField(null=True, blank=True)
 
     groups = models.ManyToManyField(
         'auth.Group',
@@ -53,11 +69,22 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = CustomUserManager()
 
-    USERNAME_FIELD = 'phone_number'
+    USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['name']
 
+    MAX_INTEREST = 3
+
+    def add_interest(self, category):
+        if self.interests.count() < self.MAX_INTEREST:
+            self.interests.add(category)
+        else:
+            raise ValueError(f"{self.MAX_INTEREST} dan ortiq qiziqish tanlash mumkin emas!")
+
+    def get_interests(self):
+        return self.interests.all()
+
     def __str__(self):
-        return f"{self.phone_number} ({self.name})"
+        return f"{self.email} ({self.name})"
 
 class Test(models.Model):
     
@@ -71,6 +98,7 @@ class Test(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True)
 
     def __str__(self):
         return self.test_title

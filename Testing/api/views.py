@@ -13,7 +13,6 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 
-
 class CustomAuthToken(ObtainAuthToken):
     def post(self, request, *args, **kwargs):
         phone_number = request.data.get('phone_number')
