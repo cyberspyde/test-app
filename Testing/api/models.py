@@ -12,7 +12,6 @@ class Category(models.Model):
     def __str__(self):
         return f"{self.name}"
 
-
 class CustomUserManager(BaseUserManager):
     def create_user(self, phone_number, name, password=None, **extra_fields):
         if not phone_number:
@@ -54,7 +53,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     avatar = models.FileField(upload_to='avatars/', blank=True, null=True)
     interests = models.ManyToManyField(Category, related_name='interested_users', blank=True)
     quiz_points = models.IntegerField(null=True, blank=True)
-    number_of_tests_done = models.IntegerField(null=True, blank=True)
+    tests_done = models.ManyToManyField('Test', related_name='tests_done_by', blank=True)
 
     groups = models.ManyToManyField(
         'auth.Group',
@@ -85,7 +84,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.email} ({self.name})"
-
+    
 class Test(models.Model):
     
     STATUS_CHOICES = [
@@ -99,15 +98,16 @@ class Test(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True)
+    random_generator = models.BooleanField(blank=True, null=True)
 
     def __str__(self):
         return self.test_title
-    
+
 class Question(models.Model):
 
     question_text = models.TextField()
     question_audio = models.FileField(upload_to='question_audio/', blank=True, null=True)
-    test = models.ForeignKey(Test, on_delete=models.CASCADE, related_name='questions')
+    test = models.ForeignKey(Test, on_delete=models.CASCADE, related_name='questions', null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True)

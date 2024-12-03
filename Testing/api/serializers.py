@@ -1,10 +1,34 @@
 from rest_framework import serializers
-from .models import User, Test, Question, Answer
+from .models import User, Test, Question, Answer, Category
+        
+class QuestionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Question
+        fields = '__all__'
+        read_only_fields = ['created_by']
+
+class TestSerializer(serializers.ModelSerializer):
+    questions = QuestionSerializer(many=True, read_only=True)
+    created_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Test
+        fields = ['id', 'test_title', 'status', 'created_at', 'updated_at','questions', 'created_by', 'created_by_name', 'random_generator']
+        read_only_fields = ['created_by', 'created_at', 'updated_at']
+
+    def get_created_by_name(self, obj):
+        return obj.created_by.name if obj.created_by else None
+
+class AnswerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Answer
+        fields = '__all__'
+        read_only_fields = ['created_by']
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'phone_number', 'name', 'role', 'password']
+        fields = ['id', 'phone_number', 'name', 'role', 'password', 'tests_done']
         extra_kwargs = {'password' : {'write_only': True}}
 
     def create(self, validated_data):
@@ -20,27 +44,8 @@ class UserSerializer(serializers.ModelSerializer):
         if 'password' in validated_data:
             instance.set_password(validated_data['password'])
         return super().update(instance,validated_data)
-        
-class QuestionSerializer(serializers.ModelSerializer):
+    
+class CategoryPercentageSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Question
+        model = Category
         fields = '__all__'
-        read_only_fields = ['created_by']
-
-class TestSerializer(serializers.ModelSerializer):
-    questions = QuestionSerializer(many=True, read_only=True)
-    created_by_name = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Test
-        fields = ['id', 'test_title', 'status', 'created_at', 'updated_at','questions', 'created_by', 'created_by_name']
-        read_only_fields = ['created_by', 'created_at', 'updated_at']
-
-    def get_created_by_name(self, obj):
-        return obj.created_by.name if obj.created_by else None
-
-class AnswerSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Answer
-        fields = '__all__'
-        read_only_fields = ['created_by']
