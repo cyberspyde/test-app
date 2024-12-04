@@ -1,5 +1,4 @@
-from rest_framework import viewsets, permissions, status, generics, views
-from rest_framework.decorators import action
+from rest_framework import viewsets, permissions, status,  views
 from rest_framework.response import Response
 from .models import User, Test, Question, Answer, Category
 from .serializers import (
@@ -7,22 +6,16 @@ from .serializers import (
     TestSerializer, 
     QuestionSerializer, 
     AnswerSerializer,
-    CategoryPercentageSerializer
 )
-from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
-from django.views.generic import View
-from django.db.models import Sum
-from django.http import JsonResponse
 from collections import Counter
 from random import sample
 from django.db import transaction
 
 
 class CategoryPerformanceView(views.APIView):
-    authentication_classes = [TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
@@ -65,7 +58,6 @@ class CustomAuthToken(ObtainAuthToken):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    authentication_classes = [TokenAuthentication]
     
     def get_permissions(self):
         if self.action == 'create':
@@ -87,7 +79,6 @@ class UserViewSet(viewsets.ModelViewSet):
 class TestViewSet(viewsets.ModelViewSet):
     queryset = Test.objects.all()
     serializer_class = TestSerializer
-    authentication_classes = [TokenAuthentication]
 
     def get_permissions(self):
         if self.action == 'list':
@@ -97,28 +88,23 @@ class TestViewSet(viewsets.ModelViewSet):
         return [permission() for permission in permission_classes]
     
     def perform_create(self, serializer):
-
-        
         test_instance = serializer.save(created_by=self.request.user)
         random_generator = self.request.data.get('random_generator', False)
-
+        number_of_questions = self.request.data.get('number_of_questions')
         if random_generator:
             category = serializer.validated_data.get('category')
             questions = Question.objects.filter(category=category)
 
-            selected_questions = sample(list(questions, min(len(questions), 30)))
+            selected_questions = sample(list(questions), min(len(questions), 30))
 
             with transaction.atomic():
                 for question in selected_questions:
                     question.test = test_instance
                     question.save()
         
-
-
 class QuestionViewSet(viewsets.ModelViewSet):
     queryset = Question.objects.all()
     serializer_class = QuestionSerializer
-    authentication_classes = [TokenAuthentication]
 
     def get_permissions(self):
         if self.action == 'list':
@@ -133,7 +119,6 @@ class QuestionViewSet(viewsets.ModelViewSet):
 class AnswerViewSet(viewsets.ModelViewSet):
     queryset = Answer.objects.all()
     serializer_class = AnswerSerializer
-    authentication_classes = [TokenAuthentication]
 
     def get_permisssions(self):
         if self.action in ['list', 'create']:

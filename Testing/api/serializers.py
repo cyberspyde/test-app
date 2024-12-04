@@ -13,7 +13,7 @@ class TestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Test
-        fields = ['id', 'test_title', 'status', 'created_at', 'updated_at','questions', 'created_by', 'created_by_name', 'random_generator']
+        fields = ['id', 'test_title', 'category', 'status', 'created_at', 'updated_at','questions', 'created_by', 'created_by_name', 'random_generator']
         read_only_fields = ['created_by', 'created_at', 'updated_at']
 
     def get_created_by_name(self, obj):
@@ -28,15 +28,16 @@ class AnswerSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'phone_number', 'name', 'role', 'password', 'tests_done']
+        fields = '__all__'
         extra_kwargs = {'password' : {'write_only': True}}
 
     def create(self, validated_data):
         user = User.objects.create_user(
-            phone_number=validated_data['phone_number'],
             name=validated_data['name'],
             password=validated_data['password'],
-            role=validated_data.get('role', 'user')
+            email=validated_data['email'],
+            role=validated_data.get('role', 'user'),
+            type=validated_data['type']
         )
         return user
 
@@ -49,3 +50,4 @@ class CategoryPercentageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = '__all__'
+    

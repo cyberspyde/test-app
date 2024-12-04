@@ -13,19 +13,19 @@ class Category(models.Model):
         return f"{self.name}"
 
 class CustomUserManager(BaseUserManager):
-    def create_user(self, phone_number, name, password=None, **extra_fields):
-        if not phone_number:
-            raise ValueError("Telefon raqam kiritilishi shart")
+    def create_user(self, email, name, password=None, **extra_fields):
+        if not email:
+            raise ValueError("Email kiritilishi shart")
         if not name:
             raise ValueError("Ism kiritilishi shart")
 
         extra_fields.setdefault('is_active', True)
-        user = self.model(phone_number=phone_number, name=name, **extra_fields)
+        user = self.model(email=email, name=name, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, phone_number, name, password=None, **extrafields):
+    def create_superuser(self, email, name, password=None, **extrafields):
         extrafields.setdefault('is_staff', True)
         extrafields.setdefault('is_superuser', True)
 
@@ -34,7 +34,7 @@ class CustomUserManager(BaseUserManager):
         if extrafields.get('is_superuser') is not True:
             raise ValueError("Superuser must have is_superuser=True")
 
-        return self.create_user(phone_number, name, password, **extrafields)
+        return self.create_user(email, name, password, **extrafields)
 
 class User(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = [
@@ -43,13 +43,36 @@ class User(AbstractBaseUser, PermissionsMixin):
         ('super_admin', 'Super Admin'),
     ]
 
-    phone_number = models.CharField(max_length=15, unique=True)
+    cities = [
+        ('jizzakh', 'Jizzax'),
+        ('tashkent', 'Toshkent'), 
+        ('samarkand', 'Samarqand'),
+        ('fergana', 'Farg`ona'),
+        ('andijan', 'Andijon'),
+        ('namangan', 'Namangan'),
+        ('bukhara', 'Buxoro'),
+        ('termiz', 'Termiz'),
+        ('navoi', 'Navoiy'),
+        ('qashqadaryo', 'Qashqadaryo'),
+        ('sirdaryo', 'Sirdaryo'),
+        ('surxondaryo', 'Surxondaryo')
+    ]
+
+    account_types = [
+        ('teacher', 'Ustoz'),
+        ('student', 'O`quvchi'),
+    ]
+
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     password = models.CharField(max_length=128, blank=True, null=True)
     name = models.CharField(max_length=128, blank=True, null=True)
     email = models.EmailField(unique=True, null=True, blank=True)
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
+    age = models.IntegerField(null=True, blank=True)
+    city = models.CharField(max_length=20, choices=cities, null=True, blank=True)
+    type = models.CharField(max_length=20, choices=account_types, null=True, blank=True)
     avatar = models.FileField(upload_to='avatars/', blank=True, null=True)
     interests = models.ManyToManyField(Category, related_name='interested_users', blank=True)
     quiz_points = models.IntegerField(null=True, blank=True)
@@ -99,6 +122,7 @@ class Test(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True)
     random_generator = models.BooleanField(blank=True, null=True)
+    number_of_questions = models.IntegerField(blank=True, null=True)
 
     def __str__(self):
         return self.test_title
@@ -108,6 +132,7 @@ class Question(models.Model):
     question_text = models.TextField()
     question_audio = models.FileField(upload_to='question_audio/', blank=True, null=True)
     test = models.ForeignKey(Test, on_delete=models.CASCADE, related_name='questions', null=True, blank=True)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
