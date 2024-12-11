@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.utils import timezone
-
+from django.contrib.postgres.fields import ArrayField
 class Category(models.Model):
     name = models.CharField(max_length=20, unique=True)
     description = models.TextField(blank=True, null=True)
@@ -77,6 +77,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     interests = models.ManyToManyField(Category, related_name='interested_users', blank=True)
     quiz_points = models.IntegerField(null=True, blank=True)
     tests_done = models.ManyToManyField('Test', related_name='tests_done_by', blank=True)
+    favorites = ArrayField(models.CharField(max_length=20), size=5, null=True, blank=True)
 
     groups = models.ManyToManyField(
         'auth.Group',
@@ -107,7 +108,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.email} ({self.name})"
-    
+
 class Test(models.Model):
     
     STATUS_CHOICES = [

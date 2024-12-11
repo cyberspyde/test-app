@@ -1,5 +1,5 @@
 Obtaining a token:
-    send a POST request to : localhost:8000/api-token-auth/
+    send a POST request to : localhost:8000/sign-up/
     params: {"phone_number": "", "password": ""}
 
 User tasks
@@ -14,6 +14,9 @@ User tasks
 
 3. delete the user using api (permission admin only)
     send DELETE request to : http://localhost:8000/users/<int:pk>/
+
+4. Get the user info (permission admin only)
+    send GET request to : http://localhost:8000/users/
 
 Test tasks
 
@@ -68,5 +71,16 @@ Answer tasks
 4. delete the Answer using api (permission set to Admin only)
     send DELETE request to : http://localhost:8000/answers/<int:pk>
     required : Auth token, answer id
+
+
+Live search by keywords
+Terabox connection
+Audio file testing
+Leaderboard statistics
+password change, user profile change
+top authors
+Search for:
+    Test, User, Collection
+
 
 

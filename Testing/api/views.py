@@ -36,6 +36,37 @@ class CategoryPerformanceView(views.APIView):
         }
         return Response(response_data)
 
+class FavoritesView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        tests = Test.objects.all()
+    
+        favorite_to_add = int(request.data.get('favorite'))
+        if not favorite_to_add:
+            return Response({"error" : "Favorite value is not passed"}, status=400)
+        if user.favorites is None:
+            user.favorites = []
+        if len(user.favorites) >= 5:
+            return Response({"error": "Maximum number of favorites reached"}, status=400)
+        
+        mylist = []
+        for t in user.favorites:
+            mylist.append(int(t))
+
+        if favorite_to_add in mylist:
+            return Response({"error": "The favorite is already in the list."}, status=400)
+        
+        for k in tests:
+            if favorite_to_add == k.id:
+                user.favorites.append(favorite_to_add)
+                user.save()
+            
+                return Response({"message" : "Favorite added successfully", "favorites" : user.favorites}, status=200)
+
+        return Response({"error" : "ID you specified is not in the list of TESTS!"}, status=400)
+
 class CustomAuthToken(ObtainAuthToken):
     def post(self, request, *args, **kwargs):
         phone_number = request.data.get('phone_number')

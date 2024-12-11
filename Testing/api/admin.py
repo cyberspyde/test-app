@@ -17,6 +17,7 @@ class CustomAnswer(admin.ModelAdmin):
 class CustomCategory(admin.ModelAdmin):
     list_display = ['id', 'name']
 
+
 admin.site.register(User, CustomUser)
 admin.site.register(Test, CustomTest)
 admin.site.register(Question, CustomQuestion)

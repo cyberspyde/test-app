@@ -1,6 +1,6 @@
 from django.urls import path, include, re_path
 from rest_framework.routers import DefaultRouter
-from .views import TestViewSet, QuestionViewSet, AnswerViewSet, CustomAuthToken, UserViewSet, CategoryPerformanceView
+from .views import TestViewSet, QuestionViewSet, AnswerViewSet, CustomAuthToken, UserViewSet, CategoryPerformanceView, FavoritesView
 from .swagger import schema_view
 from rest_framework_simplejwt import views as jwt_views
 router = DefaultRouter()
@@ -9,6 +9,7 @@ router.register(r'users', UserViewSet)
 router.register(r'tests', TestViewSet)
 router.register(r'questions', QuestionViewSet)
 router.register(r'answers', AnswerViewSet)
+#router.register(r'favorites', FavoriteViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
@@ -20,4 +21,5 @@ urlpatterns = [
     path('api-token-refresh/', jwt_views.TokenRefreshView.as_view(), name = 'token_refresh'),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('user-performance/', CategoryPerformanceView.as_view(), name='user-performance'),
+    path('favorites/', FavoritesView.as_view(), name='favorites'),
 ]
