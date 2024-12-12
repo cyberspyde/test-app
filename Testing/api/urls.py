@@ -1,6 +1,6 @@
 from django.urls import path, include, re_path
 from rest_framework.routers import DefaultRouter
-from .views import TestViewSet, QuestionViewSet, AnswerViewSet, CustomAuthToken, UserViewSet, CategoryPerformanceView, FavoritesView
+from .views import *
 from .swagger import schema_view
 from rest_framework_simplejwt import views as jwt_views
 router = DefaultRouter()
@@ -22,4 +22,6 @@ urlpatterns = [
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('user-performance/', CategoryPerformanceView.as_view(), name='user-performance'),
     path('favorites/', FavoritesView.as_view(), name='favorites'),
+    path('top-authors/', TopAuthorsView.as_view(), name='top-authors'),
+    path('weekly-points/', WeeklyPointsView.as_view(), name='weekly-points')
 ]

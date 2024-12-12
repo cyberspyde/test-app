@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import User, Test, Question, Answer, Category
-        
+from django.contrib.auth.hashers import make_password
+
 class QuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
@@ -13,7 +14,9 @@ class TestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Test
-        fields = ['id', 'test_title', 'category', 'status', 'created_at', 'updated_at','questions', 'created_by', 'created_by_name', 'random_generator']
+        fields = ['id', 'test_title', 'category', 'status', 'created_at',
+                  'updated_at','questions', 'created_by', 'created_by_name',
+                  'random_generator', 'number_of_questions', 'keywords']
         read_only_fields = ['created_by', 'created_at', 'updated_at']
 
     def get_created_by_name(self, obj):
@@ -26,10 +29,24 @@ class AnswerSerializer(serializers.ModelSerializer):
         read_only_fields = ['created_by']
 
 class UserSerializer(serializers.ModelSerializer):
+    current_password = serializers.CharField(
+        write_only=True,
+        required=False,
+        style={'input_type' : 'password'}
+    )
+    new_password = serializers.CharField(
+        write_only=True,
+        required=False,
+        style={'input_type' : 'password'}
+    )
+    
     class Meta:
         model = User
-        fields = '__all__'
-        extra_kwargs = {'password' : {'write_only': True}}
+        fields = ['id', 'email', 'name', 'phone_number', 'role', 'type', 
+                  'age', 'city', 'avatar', 'interests', 'quiz_points', 
+                  'tests_done', 'favorites', 'current_password', 'new_password']
+        extra_kwargs = {}
+
 
     def create(self, validated_data):
         user = User.objects.create_user(
@@ -42,9 +59,20 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
     def update(self, instance, validated_data):
-        if 'password' in validated_data:
-            instance.set_password(validated_data['password'])
-        return super().update(instance,validated_data)
+        current_password = validated_data.pop('current_password', None)
+        new_password = validated_data.pop('new_password', None)
+        
+        if new_password:
+            if not instance.check_password(current_password):
+                raise serializers.ValidationError(
+                    {"current_password" "Current password is incorrect"}
+                )
+            instance.set_password(new_password)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance   
     
 class CategoryPercentageSerializer(serializers.ModelSerializer):
     class Meta:

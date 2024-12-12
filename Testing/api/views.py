@@ -13,7 +13,10 @@ from django.contrib.auth import authenticate
 from collections import Counter
 from random import sample
 from django.db import transaction
-
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
+from rest_framework.decorators import action
+from django.db.models import Count
 
 class CategoryPerformanceView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -35,6 +38,43 @@ class CategoryPerformanceView(views.APIView):
             'performance' : performance_data
         }
         return Response(response_data)
+
+class TopAuthorsView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    def get(self, request, *args, **kwargs):
+        top_authors = User.objects.annotate(
+            test_count=Count('test')).order_by('-test_count')[:10]
+        
+        authors_data = [
+            {
+                'id': author.id,
+                'name': author.name,
+                'test_count': author.test_count
+            } for author in top_authors
+        ]
+
+        return Response({
+            'top_authors' : authors_data
+        })
+    
+class WeeklyPointsView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    def get(self, request, *args, **kwargs):
+
+        weekly_points = User.objects.get(pk=request.user.id).weekly_points
+        return Response({
+            "weekly-points" : weekly_points
+        })
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        new_point = int(request.data.get('new_point'))
+        if len(user.weekly_points) == 7:
+            user.weekly_points.pop()
+        user.weekly_points.insert(0, new_point)
+        user.save()
+        return Response({
+            "weekly-points" : user.weekly_points
+        })
 
 class FavoritesView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -89,6 +129,8 @@ class CustomAuthToken(ObtainAuthToken):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    search_fields = ['name', 'phone_number']
     
     def get_permissions(self):
         if self.action == 'create':
@@ -99,17 +141,44 @@ class UserViewSet(viewsets.ModelViewSet):
             permission_classes = [permissions.IsAuthenticated]
         return [permission() for permission in permission_classes]
 
-    def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        return Response(serializer.data)
+    @action(detail=True, methods=['POST'], permission_classes=[permissions.IsAuthenticated])
+    def change_role(self, request, pk=None):
+        if not request.user.is_staff:
+            return Response(
+                {"detail" : "Only staff can change user roles"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        user = self.get_object()
+        new_role = request.data.get('role')
 
+        if new_role not in dict(User.ROLE_CHOICES):
+            return Response(
+                {"detail" "Invalid Role"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        user.role = new_role
+        user.save()
+
+        return Response(
+            {"detail" : f"Role changed to {new_role}"},
+            status=status.HTTP_200_OK
+        )
+    @action(detail=False, methods=['POST'], permission_classes=[permissions.IsAuthenticated])
+    def update_profile(self, request):
+        serializer = self.get_serializer(
+            request.user,
+            data=request.data,
+            partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+    
 class TestViewSet(viewsets.ModelViewSet):
     queryset = Test.objects.all()
     serializer_class = TestSerializer
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    search_fields = ['test_title']
 
     def get_permissions(self):
         if self.action == 'list':
@@ -136,6 +205,8 @@ class TestViewSet(viewsets.ModelViewSet):
 class QuestionViewSet(viewsets.ModelViewSet):
     queryset = Question.objects.all()
     serializer_class = QuestionSerializer
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    search_fields = ['question_text']
 
     def get_permissions(self):
         if self.action == 'list':
@@ -150,6 +221,8 @@ class QuestionViewSet(viewsets.ModelViewSet):
 class AnswerViewSet(viewsets.ModelViewSet):
     queryset = Answer.objects.all()
     serializer_class = AnswerSerializer
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    search_fields = ['answer_text']
 
     def get_permisssions(self):
         if self.action in ['list', 'create']:

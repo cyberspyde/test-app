@@ -75,7 +75,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     type = models.CharField(max_length=20, choices=account_types, null=True, blank=True)
     avatar = models.FileField(upload_to='avatars/', blank=True, null=True)
     interests = models.ManyToManyField(Category, related_name='interested_users', blank=True)
-    quiz_points = models.IntegerField(null=True, blank=True)
+    lifetime_quiz_points = models.IntegerField(null=True, blank=True)
+    weekly_points = ArrayField(models.IntegerField(), size=7, null=True, blank=True)
     tests_done = models.ManyToManyField('Test', related_name='tests_done_by', blank=True)
     favorites = ArrayField(models.CharField(max_length=20), size=5, null=True, blank=True)
 
@@ -112,8 +113,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 class Test(models.Model):
     
     STATUS_CHOICES = [
-        ('published', 'Post qilingan'),
-        ('in_queue', 'Navbatda')
+        ('published', 'published'),
+        ('in_queue', 'in_queue')
     ]
 
     test_title = models.CharField(max_length=255)
@@ -124,11 +125,42 @@ class Test(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True)
     random_generator = models.BooleanField(blank=True, null=True)
     number_of_questions = models.IntegerField(blank=True, null=True)
+    keywords = ArrayField(models.CharField(max_length=50), size=5, blank=True, null=True)
 
     def __str__(self):
         return self.test_title
 
 class Question(models.Model):
+
+    question_type = [
+        ('multiple_choice', 'multiple_choice'),
+        ('true_false', 'true_false'),
+        ('type_answer', 'type_answer'),
+        ('poll', 'poll'),
+        ('audio', 'audio')
+    ]
+
+    points = [
+        (5, '5 sec'),
+        (10, '10 sec'),
+        (20, '20 sec'),
+        (30, '30 sec'),
+        (45, '45 sec'),
+        (60, '60 sec'),
+        (90, '90 sec'),
+        (120, '120'),
+    ]
+
+    timer_limits = [
+        (50, '50 pt'),
+        (100, '100 pt'),
+        (200, '200 pt'),
+        (250, '250 pt'),
+        (500, '500 pt'),
+        (750, '750 pt'),
+        (1000, '1000 pt'),
+        (2000, '2000 pt'),
+    ]
 
     question_text = models.TextField()
     question_audio = models.FileField(upload_to='question_audio/', blank=True, null=True)
@@ -137,6 +169,10 @@ class Question(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
+    point = models.IntegerField(choices=points, default=0)
+    timer_limit = models.IntegerField(choices=timer_limits, default=50)
+    type = models.CharField(max_length=50, choices=question_type, null=True, blank=True)
+    image = models.FileField(upload_to='question_image/', blank=True, null=True)
 
     def __str__(self):
         return self.question_text[:50]
@@ -150,6 +186,7 @@ class Answer(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='answers')
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(default=timezone.now)
+    correct_answer = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.question} savolga {self.created_by} tomonidan javob"

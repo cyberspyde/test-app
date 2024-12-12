@@ -74,13 +74,27 @@ Answer tasks
 
 
 Live search by keywords
+
+User search :
+    GET reqeust : http://localhost:8000/users/?search={searchTerm}
+    available keywords = name, phone_number
+Question search:
+    GET request : http://localhost:8000/questions/?search={searchTerm}
+    available keywords = question_text
+Answer search:
+    GET request : http://localhost:8000/answers/?search={searchTerm}
+    available keywords = answer_text
+Test search:
+    GET request : http://localhost:8000/tests/?search={searchTerm}
+    available keywords = test_title
+
+
 Terabox connection
 Audio file testing
 Leaderboard statistics
-password change, user profile change
-top authors
-Search for:
-    Test, User, Collection
 
+django Channels, websockets to host a test game for multiple players
+
+weekly points automatic 0 to the day when no test is done | Front or Backend?
 
 
