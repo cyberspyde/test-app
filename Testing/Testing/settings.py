@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'drf_yasg',
-    'django_filters'
+    'django_filters',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -156,3 +157,5 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME" : timedelta(days=1),
     "REFRESH_TOKEN_LIFETIME" : timedelta(days=1),
 }
+
+ASGI_APPLICATION = "api.routing.application"

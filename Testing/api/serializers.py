@@ -1,6 +1,14 @@
 from rest_framework import serializers
-from .models import User, Test, Question, Answer, Category
+from .models import *
 from django.contrib.auth.hashers import make_password
+
+class TestRoomSerializer(serializers.ModelSerializer):
+    participants = serializers.StringRelatedField(many=True)
+
+    class Meta:
+        model = TestRoom
+        fields = '__all__'
+
 
 class QuestionSerializer(serializers.ModelSerializer):
     class Meta:

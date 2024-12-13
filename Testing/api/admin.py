@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Test, Question, Answer, User, Category
+from .models import *
 from django.contrib.auth.admin import UserAdmin
 
 class CustomUser(admin.ModelAdmin):
@@ -17,9 +17,12 @@ class CustomAnswer(admin.ModelAdmin):
 class CustomCategory(admin.ModelAdmin):
     list_display = ['id', 'name']
 
+class CustomTestRoom(admin.ModelAdmin):
+    list_display = ['room_key', 'created_at', 'is_active']
 
 admin.site.register(User, CustomUser)
 admin.site.register(Test, CustomTest)
 admin.site.register(Question, CustomQuestion)
 admin.site.register(Answer, CustomAnswer)
 admin.site.register(Category, CustomCategory)
+admin.site.register(TestRoom, CustomTestRoom)

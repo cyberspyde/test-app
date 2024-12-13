@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.utils import timezone
 from django.contrib.postgres.fields import ArrayField
+from django.utils.crypto import get_random_string
 class Category(models.Model):
     name = models.CharField(max_length=20, unique=True)
     description = models.TextField(blank=True, null=True)
@@ -127,8 +128,44 @@ class Test(models.Model):
     number_of_questions = models.IntegerField(blank=True, null=True)
     keywords = ArrayField(models.CharField(max_length=50), size=5, blank=True, null=True)
 
+    def generate_room_key(self):
+        return get_random_string(length=6).upper()
+
     def __str__(self):
         return self.test_title
+
+class TestRoom(models.Model):
+    test = models.ForeignKey(Test, on_delete=models.CASCADE)
+    room_key = models.CharField(max_length=6, unique=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    @classmethod
+    def create_room(cls, test):
+        room_key = test.generate_room_key()
+        while cls.objects.filter(room_key=room_key).exists():
+            room_key = test.generate_room_key()
+
+        return cls.objects.create(
+            test=test,
+            room_key=room_key
+        )
+
+class TestParticipant(models.Model):
+    STATUSES = (
+        ('waiting', 'Waiting'),
+        ('ready', 'Ready'),
+        ('in_progress', 'In Progress'),
+        ('completed', 'Completed')
+    )
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    room = models.ForeignKey(TestRoom, on_delete=models.CASCADE, related_name='participants')
+    status = models.CharField(max_length=20, choices=STATUSES, default='waiting')
+    joined_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'room')
 
 class Question(models.Model):
 
@@ -173,6 +210,7 @@ class Question(models.Model):
     timer_limit = models.IntegerField(choices=timer_limits, default=50)
     type = models.CharField(max_length=50, choices=question_type, null=True, blank=True)
     image = models.FileField(upload_to='question_image/', blank=True, null=True)
+    order = models.IntegerField(default=0)
 
     def __str__(self):
         return self.question_text[:50]
@@ -187,6 +225,7 @@ class Answer(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(default=timezone.now)
     correct_answer = models.BooleanField(default=False)
+    participant = models.ForeignKey(TestParticipant, on_delete=models.CASCADE)
 
     def __str__(self):
         return f"{self.question} savolga {self.created_by} tomonidan javob"

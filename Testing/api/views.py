@@ -1,12 +1,7 @@
 from rest_framework import viewsets, permissions, status,  views
 from rest_framework.response import Response
-from .models import User, Test, Question, Answer, Category
-from .serializers import (
-    UserSerializer,
-    TestSerializer, 
-    QuestionSerializer, 
-    AnswerSerializer,
-)
+from .models import *
+from .serializers import *
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
@@ -174,6 +169,24 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer.save()
         return Response(serializer.data)
     
+class TestRoomViewSet(viewsets.ModelViewSet):
+    queryset = TestRoom.objects.all()
+    serializer_class = TestRoomSerializer
+
+    def create(self, request):
+        test_id = request.data.get('test')
+        test = Test.objects.get(id=test_id)
+
+        room = TestRoom.create_room(test)
+        TestParticipant.objects.create(
+            user=request.user,
+            room=room,
+            status='waiting'                
+        )
+
+        serializer = self.get_serializer(room)
+        return Response(serializer.data)
+
 class TestViewSet(viewsets.ModelViewSet):
     queryset = Test.objects.all()
     serializer_class = TestSerializer
@@ -201,7 +214,7 @@ class TestViewSet(viewsets.ModelViewSet):
                 for question in selected_questions:
                     question.test = test_instance
                     question.save()
-        
+
 class QuestionViewSet(viewsets.ModelViewSet):
     queryset = Question.objects.all()
     serializer_class = QuestionSerializer

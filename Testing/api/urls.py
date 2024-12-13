@@ -9,6 +9,7 @@ router.register(r'users', UserViewSet)
 router.register(r'tests', TestViewSet)
 router.register(r'questions', QuestionViewSet)
 router.register(r'answers', AnswerViewSet)
+router.register(r'test-rooms', TestRoomViewSet)
 #router.register(r'favorites', FavoriteViewSet)
 
 urlpatterns = [
