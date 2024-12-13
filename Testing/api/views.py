@@ -186,6 +186,24 @@ class TestRoomViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(room)
         return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def join(self, request, pk=None):
+        room = self.get_object()
+
+        if not room.is_active:
+            return Response({
+                'error': 'Room is no longer available'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        participant, created = TestParticipant.objects.get_or_create(
+            user=request.user,
+            room=room,
+            defaults={'status': 'waiting'}
+        )
+
+        serializer = TestRoomSerializer(room)
+        return Response(serializer.data)
 
 class TestViewSet(viewsets.ModelViewSet):
     queryset = Test.objects.all()

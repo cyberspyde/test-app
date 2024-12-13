@@ -1,5 +1,5 @@
 import json
-import channels.generic.websocket import AsyncWebsocketConsumer
+from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.contrib.auth.models import User
 
@@ -10,6 +10,10 @@ class TestRoomConsumer(AsyncWebsocketConsumer):
         self.room_key = self.scope['url_route']['kwargs']['room_key']
         self.user = self.scope['user']
         self.room_group_name = f"test_room_{self.room_key}"
+        
+        if self.channel_layer is None:
+            raise RuntimeError("Channel layer is not congfigured correctly.")
+        
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
@@ -38,13 +42,20 @@ class TestRoomConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def handle_participant_join(self):
+        if self.user.is_anonymous:
+            raise ValueError("Authentication Failed; User is not authorized")
+        
         room, _ = TestRoom.objects.get_or_create(
             room_key=self.room_key,
             defaults={'test' : Test.objects.first()}
         )
 
+        user = self.user if not self.user.is_anonymous else None
+        if not User:
+            raise ValueError("Anonymous users cannot join the room")
+    
         participant, created = TestParticipant.objects.get_or_create(
-            user=self.user,
+            user_id=user.id,
             room=room
         )
 
@@ -59,7 +70,7 @@ class TestRoomConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def handle_participant_leave(self):
         room = TestRoom.objects.get(room_key=self.room_key)
-        TestParticipant.objects.filter(user=self.user, room=room).delete()
+        TestParticipant.objects.filter(user_id=self.user.id, room=room).delete()
 
         return self.channel_layer.group_send(
             self.room_group_name,

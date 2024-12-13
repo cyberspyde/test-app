@@ -75,7 +75,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'Testing.wsgi.application'
+#WSGI_APPLICATION = 'Testing.wsgi.application'
 
 
 # Database
@@ -158,4 +158,13 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME" : timedelta(days=1),
 }
 
-ASGI_APPLICATION = "api.routing.application"
+ASGI_APPLICATION = "Testing.asgi.application"
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}

@@ -20,9 +20,13 @@ class CustomCategory(admin.ModelAdmin):
 class CustomTestRoom(admin.ModelAdmin):
     list_display = ['room_key', 'created_at', 'is_active']
 
+class CustomParticipant(admin.ModelAdmin):
+    list_display = ['user', 'room', 'status']
+
 admin.site.register(User, CustomUser)
 admin.site.register(Test, CustomTest)
 admin.site.register(Question, CustomQuestion)
 admin.site.register(Answer, CustomAnswer)
 admin.site.register(Category, CustomCategory)
 admin.site.register(TestRoom, CustomTestRoom)
+admin.site.register(TestParticipant, CustomParticipant)

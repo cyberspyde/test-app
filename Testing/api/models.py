@@ -225,7 +225,7 @@ class Answer(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(default=timezone.now)
     correct_answer = models.BooleanField(default=False)
-    participant = models.ForeignKey(TestParticipant, on_delete=models.CASCADE)
+    participant = models.ForeignKey(TestParticipant, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return f"{self.question} savolga {self.created_by} tomonidan javob"
