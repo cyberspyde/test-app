@@ -3,7 +3,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.contrib.auth.models import User
 
-from .models import TestRoom, TestParticipant, Test
+from .models import *
 
 class TestRoomConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -46,10 +46,31 @@ class TestRoomConsumer(AsyncWebsocketConsumer):
 
         if message_type == 'ready':
             await self.mark_participant_ready()
+
+            await self.send(text_data=json.dumps({
+                'type': 'ready_acknowledged',
+                'message': 'Your ready status has been recorded'
+            }))
         elif message_type == 'start_test':
+            print("Starting test...")
             await self.start_test()
+            print("Test started")
         elif message_type == 'submit_answer':
-            await self.handle_answer_submission(data)
+            try:
+                new_answer = await self.handle_answer_submission(data)
+
+                await self.send(text_data=json.dumps({
+                    'type': 'answer_confirmation',
+                    'question_id': data.get('question_id'),
+                    'status': 'success',
+                    'message': 'Answer submitted successfully'
+                }))
+            except Exception as e:
+                await self.send(text_data=json.dumps({
+                    'type': 'answer_confirmation',
+                    'status': 'error',
+                    'message': str(e)
+                }))
 
     @database_sync_to_async
     def handle_participant_join(self):
@@ -119,20 +140,65 @@ class TestRoomConsumer(AsyncWebsocketConsumer):
             'type': 'test_ready'
         }))
 
+
+
+
     @database_sync_to_async
-    def start_exam(self):
+    def get_test_questions(self):
         room = TestRoom.objects.get(room_key=self.room_key)
         if not room.test:
             raise ValueError("No tests associated with this room")
         
-        questions = list(room.test.questions.values('id', 'question_text'))
-        return self.channel_layer.group_send(
-            self.room_group_name,
-            {
-                'type': 'exam_started',
-                'questions': questions
-            }
-        )
+        questions= room.test.questions.order_by('order').values('id', 'question_text', 'question_audio',
+                                                                'image', 'type', 'point', 'timer_limit', 'order')
+        
+        formatted_questions = []
+
+        for question in questions:
+            formatted_questions.append({
+                'id': question['id'],
+                'text': question['question_text'],
+                'audio': question['question_audio'],
+                'image': question['image'],
+                'type': question['type'],
+                'point': question['point'],
+                'timer_limit': question['timer_limit'],
+                'order': question['order'],
+            })
+        
+        return formatted_questions
+
+    async def start_test(self):
+        try:
+            formatted_questions = await self.get_test_questions()
+            try:
+                await self.send(text_data=json.dumps({
+                    'type': 'exam_started',
+                    'questions': formatted_questions
+                }))
+                print(f"Successfully sent {len(formatted_questions)} questions via direct send")
+                return
+            except Exception as direct_send_error:
+                print(f"Direct send failed: {str(direct_send_error)}")
+
+            try:
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    {
+                        'type': 'exam_started',
+                        'questions': formatted_questions
+                    }
+                )
+                print(f"Successfully sent {len(formatted_questions)} questions via group send")
+            except Exception as group_send_error:
+                print(f"Group send failed: {str(group_send_error)}")
+                raise
+        except Exception as e:
+            print(f"Error in exam_started: {str(e)}")
+            await self.send(text_data=json.dumps({
+                'type': 'error',
+                'message': f"Error sending questions: {str(e)}"
+            }))
     
     async def exam_started(self, event):
         await self.send(text_data=json.dumps({
@@ -142,14 +208,46 @@ class TestRoomConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def handle_answer_submission(self, data):
-        room = TestRoom.objects.get(room_key=self.room_key)
-        question_id = data.get('question_id')
-        answer_text = data.get('answer')
+        try:
+            room = TestRoom.objects.get(room_key=self.room_key)
+            question_id = data.get('question_id')
+            answer_text = data.get('answer_text')
+            answer_audio = data.get('answer_audio')
 
-        if not question_id or not answer_text:
-            raise ValueError("Invalid answer submission")
-        
-        question = Question.objects.get(id=question_id, test=room.test)
-        participant = TestParticipant.objects.get(user=self.user, room=room)
+            if not question_id or not answer_text:
+                raise ValueError("Invalid answer submission")
 
-        
+            question = Question.objects.get(id=question_id, test=room.test)
+            participant = TestParticipant.objects.get(user=self.user, room=room)
+
+            new_answer = Answer.objects.create(
+                participant=participant,
+                question=question,
+                test=room.test,
+                answer_text=answer_text,
+                created_by=self.user,
+            )
+            
+            print(f"New answer has been saved to the database! {new_answer.id}")
+            print(f"Answer details: {new_answer.__dict__}")
+
+        except TestRoom.DoesNotExist:
+            print(f"TestRoom with key {self.room_key} does not exist")
+            raise ValueError("Room does not exist")
+        except Question.DoesNotExist:
+            print(f"Question with ID {data.get('question_id')} does not exist")
+            raise ValueError("Invalid question")
+        except TestParticipant.DoesNotExist:
+            print(f"User {self.user} is not a participant in the room")
+            raise ValueError("User is not a participant")
+        except Exception as e:
+            print(f"Unexpected error in handle_answer_submission: {e}")
+            raise
+    
+    async def answer_received(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'answer_received',
+            'user_email': event['user_email'],
+            'question_id': event['question_id'],
+            'answer_text': event['answer_text'],
+        }))
