@@ -168,7 +168,6 @@ class TestParticipant(models.Model):
         unique_together = ('user', 'room')
 
 class Question(models.Model):
-
     question_type = [
         ('multiple_choice', 'multiple_choice'),
         ('true_false', 'true_false'),
@@ -217,7 +216,6 @@ class Question(models.Model):
     
 
 class Answer(models.Model):
-
     answer_text = models.TextField(blank=True, null=True)
     answer_audio = models.FileField(upload_to='answer_audio/', blank=True, null=True)
     test = models.ForeignKey(Test,on_delete=models.CASCADE, related_name='answers')

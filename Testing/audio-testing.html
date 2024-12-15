@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Record and Upload Question</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        #recordButton, #stopButton, #uploadButton {
+            margin: 10px;
+            padding: 10px;
+            font-size: 16px;
+        }
+        #recordButton {
+            background-color: green;
+            color: white;
+        }
+        #stopButton {
+            background-color: red;
+            color: white;
+        }
+        #audioPlayer {
+            margin: 20px 0;
+        }
+        #questionText {
+            width: 100%;
+            margin-bottom: 20px;
+            padding: 10px;
+        }
+        #browserSupport {
+            color: red;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="browserSupport"></div>
+
+    <h2>Record Question Audio</h2>
+    
+    <textarea id="questionText" rows="4" placeholder="Enter your question text"></textarea>
+
+    <div>
+        <button id="recordButton">Start Recording</button>
+        <button id="stopButton" disabled>Stop Recording</button>
+    </div>
+
+    <audio id="audioPlayer" controls style="display: none;"></audio>
+
+    <button id="uploadButton" disabled>Upload Question</button>
+
+    <div id="status"></div>
+
+    <script>
+        const browserSupportDiv = document.getElementById('browserSupport');
+        const recordButton = document.getElementById('recordButton');
+        const stopButton = document.getElementById('stopButton');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const uploadButton = document.getElementById('uploadButton');
+        const questionText = document.getElementById('questionText');
+        const statusDiv = document.getElementById('status');
+
+        // Browser compatibility check
+        function checkBrowserCompatibility() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                browserSupportDiv.textContent = 'Your browser does not support audio recording. Please use Chrome, Firefox, or Edge.';
+                recordButton.disabled = true;
+                return false;
+            }
+
+            // Check if page is served over HTTPS
+            if (location.protocol !== 'https:') {
+                browserSupportDiv.textContent = 'Microphone access requires a secure (HTTPS) connection.';
+                return false;
+            }
+
+            return true;
+        }
+
+        // Initial compatibility check
+        checkBrowserCompatibility();
+
+        let mediaRecorder;
+        let audioChunks = [];
+        let audioBlob;
+
+        recordButton.addEventListener('click', startRecording);
+        stopButton.addEventListener('click', stopRecording);
+        uploadButton.addEventListener('click', uploadQuestion);
+
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    } 
+                });
+                
+                mediaRecorder = new MediaRecorder(stream);
+
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    audioPlayer.src = URL.createObjectURL(audioBlob);
+                    audioPlayer.style.display = 'block';
+                    
+                    uploadButton.disabled = false;
+                    audioChunks = [];
+                };
+
+                mediaRecorder.start();
+                recordButton.disabled = true;
+                stopButton.disabled = false;
+                statusDiv.textContent = 'Recording...';
+                browserSupportDiv.textContent = ''; // Clear any previous warnings
+            } catch (err) {
+                console.error('Error accessing microphone:', err);
+                
+                // Detailed error handling
+                switch(err.name) {
+                    case 'NotAllowedError':
+                        statusDiv.textContent = 'Microphone access was denied. Please check your browser permissions.';
+                        break;
+                    case 'NotFoundError':
+                        statusDiv.textContent = 'No microphone was found. Please connect a microphone.';
+                        break;
+                    case 'NotReadableError':
+                        statusDiv.textContent = 'Microphone is already in use by another application.';
+                        break;
+                    default:
+                        statusDiv.textContent = 'Error accessing microphone: ' + err.message;
+                }
+            }
+        }
+
+        function stopRecording() {
+            mediaRecorder.stop();
+            recordButton.disabled = false;
+            stopButton.disabled = true;
+            statusDiv.textContent = 'Recording stopped';
+        }
+
+        async function uploadQuestion() {
+            if (!questionText.value.trim()) {
+                statusDiv.textContent = 'Please enter a question';
+                return;
+            }
+
+            if (!audioBlob) {
+                statusDiv.textContent = 'Please record an audio first';
+                return;
+            }
+
+            const timestamp = new Date().getTime();
+            const formData = new FormData();
+            formData.append('question_text', questionText.value);
+            formData.append('question_audio', audioBlob, `recorded_audio_${timestamp}.webm`);
+
+            try {
+                const response = await fetch('http://localhost:8000/questions/', {
+                    method: 'POST',
+                    headers: {
+                        // Add your authentication headers here
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzM0MzYyNzE5LCJpYXQiOjE3MzQyNzYzMTksImp0aSI6IjlkMDk5NzVhMDU2MzQ2MDU5NWU5OTgzNjhhZjZkN2M1IiwidXNlcl9pZCI6NX0.HKtlvD6GImPZPNbDCxkfYckPvLliGxfiKbtiOAM_yDA'
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const result = await response.json();
+                statusDiv.textContent = 'Question uploaded successfully!';
+                
+                // Reset form
+                questionText.value = '';
+                audioPlayer.style.display = 'none';
+                uploadButton.disabled = true;
+                audioBlob = null;
+            } catch (error) {
+                console.error('Error:', error);
+                statusDiv.textContent = 'Error uploading question';
+            }
+        }
+    </script>
+</body>
+</html>
