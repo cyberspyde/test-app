@@ -1,0 +1,10 @@
+django
+djangorestframework
+psycopg2-binary
+drf_yasg
+django-cors-headers
+djangorestframework_simplejwt
+django-filter
+channels
+daphne
+channels-redis

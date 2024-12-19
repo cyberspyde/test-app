@@ -77,9 +77,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     avatar = models.FileField(upload_to='avatars/', blank=True, null=True)
     interests = models.ManyToManyField(Category, related_name='interested_users', blank=True)
     lifetime_quiz_points = models.IntegerField(null=True, blank=True)
+    favorites = ArrayField(models.CharField(max_length=20), size=5, null=True, blank=True)
     weekly_points = ArrayField(models.IntegerField(), size=7, null=True, blank=True)
     tests_done = models.ManyToManyField('Test', related_name='tests_done_by', blank=True)
-    favorites = ArrayField(models.CharField(max_length=20), size=5, null=True, blank=True)
+    
 
     groups = models.ManyToManyField(
         'auth.Group',
