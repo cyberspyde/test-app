@@ -14,19 +14,19 @@ class Category(models.Model):
         return f"{self.name}"
 
 class CustomUserManager(BaseUserManager):
-    def create_user(self, email, name, password=None, **extra_fields):
-        if not email:
-            raise ValueError("Email kiritilishi shart")
+    def create_user(self, phone_number, name, password=None, **extra_fields):
+        if not phone_number:
+            raise ValueError("Telefon raqam kiritilishi shart")
         if not name:
             raise ValueError("Ism kiritilishi shart")
 
         extra_fields.setdefault('is_active', True)
-        user = self.model(email=email, name=name, **extra_fields)
+        user = self.model(phone_number=phone_number, name=name, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, name, password=None, **extrafields):
+    def create_superuser(self, phone_number, name, password=None, **extrafields):
         extrafields.setdefault('is_staff', True)
         extrafields.setdefault('is_superuser', True)
 
@@ -35,7 +35,7 @@ class CustomUserManager(BaseUserManager):
         if extrafields.get('is_superuser') is not True:
             raise ValueError("Superuser must have is_superuser=True")
 
-        return self.create_user(email, name, password, **extrafields)
+        return self.create_user(phone_number, name, password, **extrafields)
 
 class User(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = [
@@ -70,7 +70,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     password = models.CharField(max_length=128, blank=True, null=True)
     name = models.CharField(max_length=128, blank=True, null=True)
     email = models.EmailField(unique=True, null=True, blank=True)
-    phone_number = models.CharField(max_length=15, blank=True, null=True)
+    phone_number = models.CharField(unique=True, max_length=15, blank=True, null=True)
     age = models.IntegerField(null=True, blank=True)
     city = models.CharField(max_length=20, choices=cities, null=True, blank=True)
     type = models.CharField(max_length=20, choices=account_types, null=True, blank=True)
@@ -94,7 +94,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = CustomUserManager()
 
-    USERNAME_FIELD = 'email'
+    USERNAME_FIELD = 'phone_number'
     REQUIRED_FIELDS = ['name']
 
     MAX_INTEREST = 3
@@ -109,7 +109,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.interests.all()
 
     def __str__(self):
-        return f"{self.email} ({self.name})"
+        return f"{self.phone_number} ({self.name})"
 
 class Test(models.Model):
     
